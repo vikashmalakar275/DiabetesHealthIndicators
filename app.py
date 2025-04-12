@@ -48,19 +48,19 @@ if page == "Data Visualization":
 
     # Display training and testing performance metrics
     st.write("### Performance Metrics")
-    st.write("- **Accuracy:** 0.92")
+    st.write("- **Accuracy:** 0.71")
     st.write("- **Precision, Recall, F1-Score:**")
     st.text("""
               precision    recall  f1-score   support
-    0       0.86      0.90      0.88       500
-    1       0.80      0.75      0.77       300
-    2       0.88      0.85      0.86       200
+    0       0.82      0.87      0.84       64020
+    1       0.72      0.70      0.71       63955
+    2       0.61      0.59      0.60       64358
     """)
     st.write("- **Confusion Matrix:**")
     st.text("""
-    [[450  30  20]
-     [ 40 225  35]
-     [ 15  20 165]]
+    [[55444    12   8564]
+     [ 3478 45001  15476]
+     [ 8885 17800  37673]]
     """)
 
     # 4. Feature Importance

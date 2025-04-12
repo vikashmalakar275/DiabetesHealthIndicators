@@ -1,68 +1,68 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
+import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix
-import joblib
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.preprocessing import StandardScaler
+from imblearn.over_sampling import SMOTE
 
-# Load dataset
-df = pd.read_csv("data/diabetes_012_health_indicators_BRFSS2015.csv")
+# Load the dataset
+data = pd.read_csv('data/diabetes_012_health_indicators_BRFSS2015.csv')
 
-# Basic Info
-print("Shape of dataset:", df.shape)
-print(df["Diabetes_012"].value_counts())
+# Data Exploration
+print("Dataset shape:", data.shape)
+print("\nClass distribution:")
+print(data['Diabetes_012'].value_counts())
 
-# ------------------ Data Visualization ------------------
+# Separate features and target variable
+X = data.drop('Diabetes_012', axis=1)
+y = data['Diabetes_012']
 
-# Set style
-sns.set(style="whitegrid")
+# Handle class imbalance using SMOTE
+smote = SMOTE(random_state=42)
+X_res, y_res = smote.fit_resample(X, y)
 
-# 1. Distribution of target classes
-plt.figure(figsize=(6, 4))
-sns.countplot(x="Diabetes_012", data=df, palette="Set2")
-plt.title("Distribution of Diabetes Classes")
-plt.xlabel("Diabetes Class (0 = No, 1 = Pre, 2 = Yes)")
-plt.ylabel("Count")
-plt.show()
+# Split data into training and testing sets (70% train, 30% test)
+X_train, X_test, y_train, y_test = train_test_split(X_res, y_res, test_size=0.3, random_state=42)
 
-# 2. Correlation heatmap
-plt.figure(figsize=(16, 12))
-sns.heatmap(df.corr(), cmap="coolwarm", annot=False, linewidths=0.5)
-plt.title("Correlation Heatmap")
-plt.show()
-
-# ------------------ Machine Learning Model ------------------
-
-# Sample data to avoid memory issues
-df_sampled = df.sample(n=30000, random_state=42)
-
-# Features and target
-X = df_sampled.drop(columns=["Diabetes_012"])
-y = df_sampled["Diabetes_012"]
-
-# Train-test split
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
-
-# Scale features
+# Feature scaling
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# Train model
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train_scaled, y_train)
+# Initialize and train Random Forest model
+rf_model = RandomForestClassifier(
+    n_estimators=200,  # Number of trees in the forest
+    max_depth=10,      # Maximum depth of each tree
+    min_samples_split=5,  # Minimum samples required to split a node
+    min_samples_leaf=2,   # Minimum samples required at each leaf node
+    random_state=42,      # For reproducibility
+    class_weight='balanced'  # Adjust weights inversely proportional to class frequencies
+)
 
-# Evaluate
-y_pred = model.predict(X_test_scaled)
+# Train the model
+rf_model.fit(X_train_scaled, y_train)
 
-print("\nConfusion Matrix:\n", confusion_matrix(y_test, y_pred))
-print("\nClassification Report:\n", classification_report(y_test, y_pred, digits=4))
+# Make predictions
+y_pred = rf_model.predict(X_test_scaled)
 
+# Evaluate the model
+print("\nModel Evaluation:")
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
 
-#Save trained model
-joblib.dump(model, "model/model.pkl")
+# Feature Importance
+feature_importance = pd.DataFrame({
+    'Feature': X.columns,
+    'Importance': rf_model.feature_importances_
+}).sort_values('Importance', ascending=False)
+
+print("\nTop 10 Important Features:")
+print(feature_importance.head(10))
+
+# Save the model (optional)
+import joblib
+joblib.dump(rf_model, 'model/model.pkl')
